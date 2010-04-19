@@ -1,6 +1,6 @@
 import sys, time, random, threading
 
-class m2:
+class MonomeSeries:
 	"launch/maintain monome devices"
 	
 	def __init__(self, name):
@@ -9,9 +9,13 @@ class m2:
 		self.st.start()
 		
 	def main(self):
-		i = 20
+		i = 10
 		while i > 1:
 			i = i-1
 			print "%s: %d" % (self.name, i)
 			time.sleep(random.random())
 		print self.name + " done"
+		
+
+def identify():
+	return ("m64", MonomeSeries)

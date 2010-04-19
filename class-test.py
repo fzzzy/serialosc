@@ -1,30 +1,29 @@
-import os, sys, time, random
+import os, sys, time, random, fnmatch
 import threading
 
-# from profiles.monomedevice import *
-# from profiles.m2 import *
+sys.path.append('./profiles/')
 
-deviceList = []
+deviceList = {}
+deviceNames = []
 
 for n in os.listdir("profiles/"):
-	deviceFile = os.path.normpath(os.path.join("profiles/", n))
-	deviceList.append(deviceFile)
+	if fnmatch.fnmatch(n, '*.py'):
+		if n != '__init__.py':
+			deviceNames.append(n[0:-3])
 
-print deviceList
+print "found devices: %s" % deviceNames
 
-devices = []
+devices = map(__import__, deviceNames)
 
-for n in deviceList:
-	devices.append(__import__(n))
-
-	
-DeviceList = {"md":MonomeDevice, "m2":devices[0].m2.m2}
-	
+for n in devices:
+	m = n.identify()
+	deviceList[m[0]] = m[1]
+		
 if __name__ == "__main__":
-	a = DeviceList["md"]("m1")
-	b = DeviceList["m2"]("+++++++++++")
-	c = MonomeDevice("m3")
-	d = MonomeDevice("m4")
+	a = deviceList["m64"]("instance a ++")
+	b = deviceList["m64"]("instance b ++++")
+	c = deviceList["m64"]("instance c ++++++")
+	d = deviceList["m40h"]("instance d ++++++++")
 	
 	try:
 		while True:
