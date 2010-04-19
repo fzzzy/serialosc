@@ -12,7 +12,8 @@ if __name__ == "__main__":
 	connected = False
 	ser = serial.Serial()
 
-	print "======================= serialosc ======================="
+	print "==========serialosc ====================================="
+	print "========= ctrl-c to quit ================================"
 	
 	name    = 'serialosc/m64-0000'
 	regtype = '_osc._udp'
@@ -71,7 +72,7 @@ if __name__ == "__main__":
 	s.addMsgHandler("/led", led_handler)
 	st = threading.Thread(target=s.serve_forever)
 	st.start()
-	print "Starting OSCServer. Use ctrl-C to quit."
+	print "Starting OSCServer."
 		
 	
 ########################### main loop ##################################	
