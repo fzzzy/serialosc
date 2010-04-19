@@ -1,0 +1,26 @@
+
+startup/init
+
+1. read device list/folder
+
+main loop
+
+1. check for serial device, if found:
+	- try to open it, if ok:
+	- check session file for previous settings, if found:
+		resume settings, if not, create file
+	- self-assign bonjour port, name "serialosc/m64-0000", regtype _osc._udp
+	- start service
+	
+2. check if any devices closed, if so:
+	- cleanup, unregister service
+	
+3. refresh devices
+	- check for incoming/received OSC messages
+		- process /sys/ messages
+		- process device-specific messages, send serial
+	- check for incoming/received serial data
+		- process and send OSC
+
+// rename /sys to /serialosc ?
+// ability to rename device? default to serial number?
