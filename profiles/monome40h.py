@@ -1,6 +1,6 @@
 import sys, time, random, threading
 
-class Monome40h:
+class Monome40h(object):
 	"launch/maintain monome devices"
 	
 	def __init__(self, name):

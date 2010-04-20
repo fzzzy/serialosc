@@ -1,8 +1,14 @@
-import sys, time, os
-import serial
-import pybonjour
+"""
+bonjour-enabled serial router using open sound control
+"""
+
+import sys
+import time
+import os
 import threading
 
+import serial
+import pybonjour
 from OSC import *
 
 if __name__ == "__main__":
@@ -14,10 +20,6 @@ if __name__ == "__main__":
 
 	print "==========serialosc ====================================="
 	print "========= ctrl-c to quit ================================"
-	
-	name    = 'serialosc/m64-0000'
-	regtype = '_osc._udp'
-	port    = 8080
 
 	def register_callback(sdRef, flags, errorCode, name, regtype, domain):
 	    if errorCode == pybonjour.kDNSServiceErr_NoError:
@@ -25,6 +27,10 @@ if __name__ == "__main__":
 	        print '  name    =', name
 	        print '  regtype =', regtype
 	        print '  domain  =', domain
+
+	name    = 'serialosc/m64-0001'
+	regtype = '_osc._udp'
+	port    = 8080
 
 	sdRef = pybonjour.DNSServiceRegister(name = name,
 	                                     regtype = regtype,

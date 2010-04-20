@@ -1,29 +1,39 @@
-import os, sys, time, random, fnmatch
-import threading
+"""
+bonjour-enabled serial router using open sound control
+"""
+
+import sys
+import os
+import time
 
 sys.path.append('./profiles/')
 
-deviceList = {}
-deviceNames = []
+
+# scan profiles/ for available device profiles
+
+device_list = {}
+device_names = []
 
 for n in os.listdir("profiles/"):
-	if fnmatch.fnmatch(n, '*.py'):
+	if n.endswith('.py'):
 		if n != '__init__.py':
-			deviceNames.append(n[0:-3])
+			device_names.append(n[0:-3])
 
-print "found devices: %s" % deviceNames
+print "found devices: %s" % device_names
 
-devices = map(__import__, deviceNames)
+devices = map(__import__, device_names)
 
 for n in devices:
 	m = n.identify()
-	deviceList[m[0]] = m[1]
+	device_list[m[0]] = m[1]
+
+
 		
 if __name__ == "__main__":
-	a = deviceList["m64"]("instance a ++")
-	b = deviceList["m64"]("instance b ++++")
-	c = deviceList["m64"]("instance c ++++++")
-	d = deviceList["m40h"]("instance d ++++++++")
+	a = device_list["m64"]("instance a ++")
+	b = device_list["m64"]("instance b ++++")
+	c = device_list["m64"]("instance c ++++++")
+	d = device_list["m40h"]("instance d ++++++++")
 	
 	try:
 		while True:
