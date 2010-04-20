@@ -56,9 +56,11 @@ class MonomeSeries(object):
 		print "Starting OSCServer."
 		
 		while self.alive is True:
+			#this is where we poll for serial data, decode, send OSC
 			time.sleep(1)
 			
 		print "time to stop"
+		self.s.close()
 		self.st.join()
 		
 		print "joined??"
