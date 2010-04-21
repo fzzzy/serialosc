@@ -2,28 +2,34 @@ import sys
 import time
 import threading
 
+import serial
 import pybonjour
 from OSC import *
 
 class MonomeSeries(object):
 	"""launch/maintain monome devices"""
 	
-	def __init__(self):
-		print "init"
-		self.alive = True
+	def __init__(self, path):
+		print "device: monomeseries init"
+		self.ser = serial.Serial()
+		self.osc_client = OSCClient()
+		self.alive = False
+		self.path = path
+		self.name = path[19:]
 		self.th = threading.Thread(target=self.main)
 		self.th.start()
 
+	# osc handlers ###############################################
 	
 	def printing_handler(self, addr, tags, stuff, source):
 		msg_string = "%s [%s] %s" % (addr, tags, str(stuff))
-		sys.stdout.write("OSCServer Got: '%s' from %s\n" % (msg_string, getUrlStr(source)))
+		sys.stdout.write("osc: '%s' from %s\n" % (msg_string, getUrlStr(source)))
 		return
 	
 	def sys_port_handler(self, addr, tags, stuff, source):
 		try:
-			#c.connect(('0.0.0.0', stuff[0]))
-			print "port switched to %d" % stuff[0]
+			self.osc_client.connect(('0.0.0.0', stuff[0]))
+			print "osc: port switched to %d" % stuff[0]
 		except OSC.OSCClientError:
 			pass
 		return
@@ -36,34 +42,104 @@ class MonomeSeries(object):
 			
 			a = (abs(state-1)+2) << 4
 			b = (x << 4) + y
-			#ser.write(chr(a) + chr(b))
+			self.ser.write(chr(a) + chr(b))
 			print "OSC received, serial written: %10s %10s" % (bin(a), bin(b))
 		except IOError:
 			print "serial write error?"
+			self.alive = False
 		return
 	
 
+	# main ############################################################
 
 	def main(self):
-		print "main"
-		self.s = OSCServer(('0.0.0.0', 8080))
-		self.s.addDefaultHandlers()
-		self.s.addMsgHandler("/print", self.printing_handler)
-		self.s.addMsgHandler("/sys/port", self.sys_port_handler)
-		self.s.addMsgHandler("/led", self.led_handler)
-		self.st = threading.Thread(target=self.s.serve_forever)
-		self.st.start()
-		print "Starting OSCServer."
+		print "%s: main loop started" % self.name
 		
-		while self.alive is True:
-			#this is where we poll for serial data, decode, send OSC
+		retry = 4
+		while retry > 0:
+			try:
+				self.ser = serial.Serial(self.path,115200)
+				print "%s: connected to %s" % (self.name, self.path)
+				self.alive = True
+				retry = 0
+			except serial.serialutil.SerialException:
+				print "%s: port busy, will try again..." % self.name
+				retry = retry - 1
 			time.sleep(1)
-			
-		print "time to stop"
-		self.s.close()
-		self.st.join()
 		
-		print "joined??"
+		if self.alive:	
+			try:
+				self.osc_client.connect(('0.0.0.0', 8000))
+			except OSC.OSCClientError:
+				print "no destination port?"
+			
+			
+			# must grab a random port instead!
+			self.osc_server = OSCServer(('0.0.0.0', 8080))
+			self.osc_server.addDefaultHandlers()
+			self.osc_server.addMsgHandler("/print", self.printing_handler)
+			self.osc_server.addMsgHandler("/sys/port", self.sys_port_handler)
+			self.osc_server.addMsgHandler("/led", self.led_handler)
+			self.osc_server_thread = threading.Thread(\
+										target=self.osc_server.serve_forever)
+			self.osc_server_thread.start()
+			print "%s: starting OSC server" % self.name
+
+
+			def register_callback(sdRef, flags, errorCode, name, regtype, domain):
+			    if errorCode == pybonjour.kDNSServiceErr_NoError:
+			        print 'Registered service:'
+			        print '  name    =', name
+			        print '  regtype =', regtype
+			        print '  domain  =', domain
+
+			# TODO: what happens if this registration fails? can it fail?
+			sdRef = pybonjour.DNSServiceRegister(name = "serialosc/"+self.name,
+			                                     regtype = '_osc._udp',
+			                                     port = 8080,
+			                                     callBack = register_callback)
+
+			ready = select.select([sdRef], [], [])
+			if sdRef in ready[0]:
+				pybonjour.DNSServiceProcessResult(sdRef)
+
+			incoming_bytes = []
+
+			while self.alive is True:
+				try:	
+					while self.ser.inWaiting():
+						incoming_bytes.append(self.ser.read())
+						if len(incoming_bytes) == 2:
+							m = OSCMessage()
+							t = ord(incoming_bytes[0]) >> 4
+							
+							if (t == 0) or (t == 1):
+								x = ord(incoming_bytes[1]) >> 4
+								y = ord(incoming_bytes[1]) & 0x0f
+								m.setAddress("/press")
+								m.append(x)
+								m.append(y)
+								m.append(abs(t-1))
+								try:
+									self.osc_client.send(m)
+								except OSCClientError:
+									pass
+							print "serial received: %10s %10s" % (bin(ord(incoming_bytes[0])), bin(ord(incoming_bytes[1])))
+							incoming_bytes = []				
+				except IOError:
+					print "%s: device disconnected" % self.name
+					self.alive = False
+				time.sleep(0.001)
+			
+			print "%s: time to stop" % self.name
+			self.ser.close()
+			print "%s: serial port closed" % self.name
+			self.osc_client.close()
+			self.osc_server.close()
+			self.osc_server_thread.join()
+			print "%s: osc server closed" % self.name
+			
+		print "%s: main loop finished" % self.name
 		
 	def close(self):
 		self.alive = False
@@ -76,10 +152,10 @@ def identify():
 
 
 if __name__ == "__main__":
-	c = MonomeSeries()
+	c = MonomeSeries("/dev/tty.usbserial-m64-0001")
 
 	try:
 		while True:
-			pass
+			time.sleep(1)
 	except KeyboardInterrupt:
 		c.close()

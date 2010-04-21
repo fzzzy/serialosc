@@ -1,4 +1,16 @@
+TODO:
 
+serialosc.py:
+
+check for closed ports, allow re-plug
+
+device:
+randomize osc server port
+finish serial protocol and osc handlers
+
+
+general theory of operation:
+===============================
 startup/init
 
 1. read device list/folder
