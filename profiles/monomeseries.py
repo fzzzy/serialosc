@@ -74,8 +74,10 @@ class MonomeSeries(object):
 				print "no destination port?"
 			
 			
-			# must grab a random port instead!
-			self.osc_server = OSCServer(('0.0.0.0', 8080))
+			# Passing 0 chooses a random, unused port
+			self.osc_server = OSCServer(('0.0.0.0', 0))
+			listen_port = self.osc_server.socket.getsockname()[1]
+			#print "OSC Server listening on %s" % listen_port
 			self.osc_server.addDefaultHandlers()
 			self.osc_server.addMsgHandler("/print", self.printing_handler)
 			self.osc_server.addMsgHandler("/sys/port", self.sys_port_handler)
@@ -96,7 +98,7 @@ class MonomeSeries(object):
 			# TODO: what happens if this registration fails? can it fail?
 			sdRef = pybonjour.DNSServiceRegister(name = "serialosc/"+self.name,
 			                                     regtype = '_osc._udp',
-			                                     port = 8080,
+			                                     port = listen_port,
 			                                     callBack = register_callback)
 
 			ready = select.select([sdRef], [], [])
