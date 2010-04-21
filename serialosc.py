@@ -46,7 +46,7 @@ if __name__ == "__main__":
 		while True:			
 			found_ports = []
 			for port in os.listdir("/dev/"):
-				if ('m64' or 'm128' or 'm256') and 'tty.usb' in port:
+				if ('m64' in port or 'm128' in port or 'm256' in port) and 'tty.usb' in port:
 				 	matched_port = os.path.normpath(os.path.join("/dev", port))
 					found_ports.append(matched_port)
 			
